@@ -11,7 +11,7 @@ require (
 	github.com/goodhosts/hostsfile v0.1.7
 	github.com/mattn/go-colorable v0.1.14
 	github.com/sasha-s/go-deadlock v0.3.6
-	github.com/tidwall/jsonc v0.3.2
+	github.com/tidwall/jsonc v0.3.3
 )
 
 require (
