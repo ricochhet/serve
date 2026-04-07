@@ -10,7 +10,7 @@ require (
 	github.com/go-chi/httprate v0.15.0
 	github.com/goodhosts/hostsfile v0.1.7
 	github.com/mattn/go-colorable v0.1.14
-	github.com/sasha-s/go-deadlock v0.3.6
+	github.com/sasha-s/go-deadlock v0.3.9
 	github.com/tidwall/jsonc v0.3.3
 )
 
