@@ -1,0 +1,25 @@
+module github.com/ricochhet/serve
+
+go 1.26
+
+require golang.org/x/sys v0.41.0 // indirect
+
+require (
+	github.com/go-chi/chi/v5 v5.2.5
+	github.com/go-chi/cors v1.2.2
+	github.com/go-chi/httprate v0.15.0
+	github.com/goodhosts/hostsfile v0.1.7
+	github.com/mattn/go-colorable v0.1.14
+	github.com/sasha-s/go-deadlock v0.3.6
+	github.com/tidwall/jsonc v0.3.2
+)
+
+require (
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
+	github.com/dimchansky/utfbom v1.1.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/magefile/mage v1.15.0 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/petermattis/goid v0.0.0-20250813065127-a731cc31b4fe // indirect
+	github.com/zeebo/xxh3 v1.0.2 // indirect
+)
