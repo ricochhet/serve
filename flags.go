@@ -1,0 +1,49 @@
+package main
+
+import (
+	"flag"
+
+	"github.com/ricochhet/serve/pkg/cmdx"
+)
+
+type Flags struct {
+	Debug     bool
+	QuickEdit bool
+
+	ConfigFile string
+	CertFile   string
+	KeyFile    string
+
+	Hosts bool
+}
+
+var (
+	flags = NewFlags()
+	cmds  = cmdx.Info{
+		{Usage: "serve help", Desc: "Show this help"},
+		{Usage: "serve list [PATH]", Desc: "List embedded files"},
+		{Usage: "serve dump [PATH]", Desc: "Dump embedded files to disk"},
+		{Usage: "serve version", Desc: "Display serve version"},
+	}
+)
+
+// NewFlags creates an empty Flags.
+func NewFlags() *Flags {
+	return &Flags{}
+}
+
+//nolint:gochecknoinits // wontfix
+func init() {
+	registerFlags(flag.CommandLine, flags)
+	flag.Parse()
+}
+
+// registerFlags registers all flags to the flagset.
+func registerFlags(fs *flag.FlagSet, f *Flags) {
+	fs.BoolVar(&f.Debug, "debug", false, "Enable debug mode")
+	fs.BoolVar(&f.QuickEdit, "quick-edit", false, "Enable quick edit mode (Windows)")
+	fs.StringVar(&f.ConfigFile, "c", "serve.json", "Path to file server configuration")
+	fs.StringVar(&f.CertFile, "cert", "", "TLS cert")
+	fs.StringVar(&f.KeyFile, "key", "", "TLS key")
+	fs.BoolVar(&f.Hosts, "hosts", false, "Modify hosts according to configuration")
+}

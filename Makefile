@@ -7,11 +7,8 @@ GO_BUILD=go build -trimpath -ldflags "$(LDFLAGS)"
 
 APP_NAMES=serve
 
-SERVE_PATH=./cmd/serve
+SERVE_PATH=.
 SERVE_BIN_NAME=serve
-
-PM_PATH=./cmd/pm
-PM_BIN_NAME=pm
 
 define GO_BUILD_APP
 	CGO_ENABLED=1 GOOS=$(1) GOARCH=$(2) $(GO_BUILD) -o $(BUILD_OUTPUT)/$(3) $(4)
@@ -86,27 +83,3 @@ serve-darwin-arm64: fmt
 .PHONY: serve-windows
 serve-windows: fmt copy-assets
 	$(call GO_BUILD_APP,windows,amd64,$(SERVE_BIN_NAME).exe,$(SERVE_PATH))
-
-# ----- PM -----
-.PHONY: pm
-pm: pm-linux pm-linux-arm64 pm-darwin pm-darwin-arm64 pm-windows
-
-.PHONY: pm-linux
-pm-linux: fmt
-	$(call GO_BUILD_APP,linux,amd64,$(PM_BIN_NAME)-linux,$(PM_PATH))
-
-.PHONY: pm-linux-arm64
-pm-linux-arm64: fmt
-	$(call GO_BUILD_APP,linux,arm64,$(PM_BIN_NAME)-linux-arm64,$(PM_PATH))
-
-.PHONY: pm-darwin
-pm-darwin: fmt
-	$(call GO_BUILD_APP,darwin,amd64,$(PM_BIN_NAME)-darwin,$(PM_PATH))
-
-.PHONY: pm-darwin-arm64
-pm-darwin-arm64: fmt
-	$(call GO_BUILD_APP,darwin,arm64,$(PM_BIN_NAME)-darwin-arm64,$(PM_PATH))
-
-.PHONY: pm-windows
-pm-windows: fmt copy-assets
-	$(call GO_BUILD_APP,windows,amd64,$(PM_BIN_NAME).exe,$(PM_PATH))

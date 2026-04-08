@@ -50,7 +50,7 @@ jobs:
 
             - name: build
               run: |
-                  go build ./cmd/serve
+                  go build .
 
             - name: test
               run: |

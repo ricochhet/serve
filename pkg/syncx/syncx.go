@@ -1,0 +1,44 @@
+package syncx
+
+import "github.com/sasha-s/go-deadlock"
+
+type Safe[T any] struct {
+	Mutex deadlock.Mutex
+	t     *T
+}
+
+// NewSafe creates an empty Safe.
+func NewSafe[T any]() *Safe[T] {
+	return &Safe[T]{}
+}
+
+// GetLocked returns the target.
+func (s *Safe[T]) GetLocked() *T {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	return s.t
+}
+
+// Get is the same as GetLocked() but does not lock the mutex.
+func (s *Safe[T]) Get() *T {
+	return s.t
+}
+
+// SetLocked sets the target.
+func (s *Safe[T]) SetLocked(t *T) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	s.t = t
+}
+
+// Set is the same as SetLocked() but does not lock the mutex.
+func (s *Safe[T]) Set(t *T) {
+	s.t = t
+}
+
+// CopyFrom sets all target to the target.
+func (s *Safe[T]) CopyFrom(target *Safe[T]) {
+	s.SetLocked(target.GetLocked())
+}
