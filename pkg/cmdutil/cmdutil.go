@@ -7,15 +7,15 @@ import (
 	"text/tabwriter"
 )
 
-type Commands []*Command
+type CommandInfo []*commandInfo
 
-type Command struct {
+type commandInfo struct {
 	Usage string
 	Desc  string
 }
 
-// Usage runs flag.PrintDefaults() and exits with code 0.
-func (c *Commands) Usage() {
+// Usage pretty prints CommandInfo and lists flag.PrintDefaults().
+func (c *CommandInfo) Usage() {
 	tw := tabwriter.NewWriter(os.Stderr, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "Usage:")
 
@@ -25,11 +25,10 @@ func (c *Commands) Usage() {
 
 	tw.Flush()
 	flag.PrintDefaults()
-	os.Exit(0)
 }
 
-// Check checks if flag.Narg() < v+1, calling Usage() if true.
-func (c *Commands) Check(v int) {
+// Expects checks if flag.Narg() < v+1 (expected arguments), calling Usage() if true.
+func (c *CommandInfo) Expects(v int) {
 	if flag.NArg() < v+1 {
 		c.Usage()
 	}

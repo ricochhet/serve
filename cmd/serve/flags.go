@@ -19,7 +19,7 @@ type Flags struct {
 
 var (
 	flags = NewFlags()
-	cmds  = cmdutil.Commands{
+	cmds  = cmdutil.CommandInfo{
 		{Usage: "serve help", Desc: "Show this help"},
 		{Usage: "serve list [PATH]", Desc: "List embedded files"},
 		{Usage: "serve dump [PATH]", Desc: "Dump embedded files to disk"},

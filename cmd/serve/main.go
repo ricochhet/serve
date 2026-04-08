@@ -31,12 +31,10 @@ func main() {
 	logutil.SetDebug(flags.Debug)
 	_ = cmdutil.QuickEdit(flags.QuickEdit)
 
-	cmd, err := commands()
-	if err != nil {
-		logutil.Errorf(logutil.Get(), "Error running command: %v\n", err)
-	}
-
-	if cmd {
+	if cmd, err := commands(); cmd {
+		if err != nil {
+			logutil.Errorf(logutil.Get(), "Error running command: %v\n", err)
+		}
 		return
 	}
 
@@ -62,10 +60,10 @@ func commands() (bool, error) {
 
 	switch cmd {
 	case "dump", "d":
-		cmds.Check(1)
+		cmds.Expects(1)
 		return true, dumpCmd(rest...)
 	case "list", "l":
-		cmds.Check(1)
+		cmds.Expects(1)
 		return true, listCmd(rest...)
 	case "help", "h":
 		cmds.Usage()

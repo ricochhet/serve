@@ -56,7 +56,7 @@ func serverCmd(s *server.Context) error {
 		}
 
 		return err
-	}, "List", func(_, elapsed string) {
+	}, "Server", func(_, elapsed string) {
 		logutil.Infof(logutil.Get(), "Took %s\n", elapsed)
 	})
 }
