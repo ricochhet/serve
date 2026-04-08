@@ -35,6 +35,7 @@ func main() {
 		if err != nil {
 			logutil.Errorf(logutil.Get(), "Error running command: %v\n", err)
 		}
+
 		return
 	}
 
