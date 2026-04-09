@@ -41,6 +41,12 @@ var (
 	MaxProcNameLength = &atomicx.Int32{}
 )
 
+// NewLogger is a convenience function for CreateLogger that additionally assigns MaxProcNameLength.
+func NewLogger(name string, colorIndex int) *Logger {
+	MaxProcNameLength.Store(int32(len(name)))
+	return newLogger(name, colorIndex)
+}
+
 // WriteTo writes buffer to w (io.Writer).
 func (v *buffers) WriteTo(w io.Writer) (n int64, err error) {
 	for _, b := range *v {
@@ -99,7 +105,7 @@ func (l *Logger) writeBuffers(line []byte) {
 	l.buffers = append(l.buffers, line)
 
 	if _, err := l.buffers.WriteTo(out); err != nil {
-		Errorf(os.Stderr, "Failed to write to buffer: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to write to buffer :%v\n", err)
 	}
 
 	l.buffers = l.buffers[0:0]
@@ -158,8 +164,8 @@ func (l *Logger) writeLines() {
 	}
 }
 
-// CreateLogger creates a new logger with the given name and colorIndex.
-func CreateLogger(name string, colorIndex int) *Logger {
+// newLogger creates a new logger with the given name and colorIndex.
+func newLogger(name string, colorIndex int) *Logger {
 	mutex.Lock()
 	defer mutex.Unlock()
 

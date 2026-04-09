@@ -21,7 +21,7 @@ func (s *Safe) ListenAndServe(addr string) *http.Server {
 		IdleTimeout:       time.Duration(s.Get().Timeouts.Idle) * time.Second,
 	}
 
-	logx.Infof(logx.Get(), "Server listening on %s\n", addr)
+	logx.Infof("Server listening on %s\n", addr)
 
 	go func() {
 		var err error
@@ -39,7 +39,6 @@ func (s *Safe) ListenAndServe(addr string) *http.Server {
 
 		if err != nil && err != http.ErrServerClosed {
 			logx.Infof(
-				logx.Get(),
 				"Server %s failed: %v\n",
 				strings.TrimPrefix(addr, ":"),
 				err,

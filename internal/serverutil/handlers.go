@@ -76,7 +76,7 @@ func newHeaderWriter(
 // WithLogging is a middleware that logs the method and URL path for the handler.
 func WithLogging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logx.Infof(logx.Get(), "%s %s\n", r.Method, r.URL.Path)
+		logx.Infof("%s %s\n", r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }

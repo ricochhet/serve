@@ -12,7 +12,8 @@ var webFS embed.FS
 
 func Embed() *embedx.EmbeddedFileSystem {
 	return &embedx.EmbeddedFileSystem{
-		Root: filepath.ToSlash(filepath.Join("wwwroot", "serve")),
-		FS:   webFS,
+		Root:   filepath.ToSlash(filepath.Join("wwwroot", "serve")),
+		FS:     webFS,
+		Prefix: "asset:",
 	}
 }

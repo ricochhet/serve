@@ -2,6 +2,7 @@ package embedx
 
 import (
 	"embed"
+	"encoding/base64"
 	"path/filepath"
 	"strings"
 
@@ -10,8 +11,9 @@ import (
 )
 
 type EmbeddedFileSystem struct {
-	Root string
-	FS   embed.FS
+	Root   string
+	FS     embed.FS
+	Prefix string
 }
 
 // List return a list of files within the embedded fs, calling the list function in return.
@@ -32,6 +34,10 @@ func (e *EmbeddedFileSystem) Dump(pattern, name string, dump func(fsx.File, []by
 	}
 
 	for _, file := range files {
+		if file.Info.IsDir() {
+			continue
+		}
+
 		if !strings.Contains(file.Path, name) {
 			continue
 		}
@@ -59,7 +65,31 @@ func (e *EmbeddedFileSystem) MaybeReadEmbedded(name string) ([]byte, error) {
 	return e.Read(name)
 }
 
-// Read converts a file in the embedded filesystem into an array of bytes.
+// ReadBase64 attempts to cut the prefix from the name, otherwise returning decoded Base64 bytes.
+func (e *EmbeddedFileSystem) ReadBase64(name string) ([]byte, error) {
+	if after, ok := strings.CutPrefix(name, e.Prefix); ok {
+		return e.Read(after)
+	}
+
+	b, err := base64.RawStdEncoding.DecodeString(name)
+	if err != nil {
+		return nil, errorx.WithFrame(err)
+	}
+
+	return b, nil
+}
+
+// Bytes reads a file from the embedded filesystem, returning a new byte slice if it cannot be read.
+func (e *EmbeddedFileSystem) Bytes(name string) []byte {
+	b, _ := e.Read(name)
+	if b == nil {
+		return []byte{}
+	}
+
+	return b
+}
+
+// Read reads a file from the embedded filesystem as an array of bytes.
 func (e *EmbeddedFileSystem) Read(name string) ([]byte, error) {
 	b, err := e.FS.ReadFile(filepath.ToSlash(filepath.Join(e.Root, name)))
 	if err != nil {

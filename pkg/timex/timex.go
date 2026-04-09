@@ -11,11 +11,11 @@ func TimeStamp() string {
 }
 
 // Fn starts a timer with a function.
-func Fn(fn func() error, name string, caller func(string, string)) error {
-	start := time.Now()
-	err := fn()
-	elapsed := time.Since(start)
-	caller(name, elapsed.String())
+func Fn(start func() error, end func(string)) error {
+	now := time.Now()
+	err := start()
+
+	end(time.Since(now).String())
 
 	return errorx.WithFrame(err)
 }

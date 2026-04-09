@@ -7,9 +7,9 @@ import (
 	"text/tabwriter"
 )
 
-type Info []*Entry
+type Info []*info
 
-type Entry struct {
+type info struct {
 	Usage string
 	Desc  string
 }

@@ -18,22 +18,22 @@ var (
 )
 
 func version() {
-	logx.Infof(logx.Get(), "serve-%s\n", gitHash)
-	logx.Infof(logx.Get(), "Build date: %s\n", buildDate)
-	logx.Infof(logx.Get(), "Build on: %s\n", buildOn)
+	logx.Infof("serve-%s\n", gitHash)
+	logx.Infof("Build date: %s\n", buildDate)
+	logx.Infof("Build on: %s\n", buildOn)
 	os.Exit(0)
 }
 
 func main() {
 	logx.LogTime.Store(true)
 	logx.MaxProcNameLength.Store(0)
-	logx.Set(logx.NewLogger("serve", 0))
+	logx.New("serve", 0)
 	logx.SetDebug(flags.Debug)
 	_ = cmdx.QuickEdit(flags.QuickEdit)
 
 	if cmd, err := commands(); cmd {
 		if err != nil {
-			logx.Errorf(logx.Get(), "Error running command: %v\n", err)
+			logx.Errorf("Error running command: %v\n", err)
 		}
 
 		return
@@ -45,7 +45,7 @@ func main() {
 		KeyFile:  flags.KeyFile,
 	}, Embed())
 	if err := serverCmd(s); err != nil {
-		logx.Errorf(logx.Get(), "%v\n", err)
+		logx.Errorf("%v\n", err)
 	}
 }
 

@@ -52,7 +52,7 @@ func NewServer(
 
 // StartServer starts an HTTP server with the specified server configuration.
 func (c *Context) StartServer() error {
-	config, err := c.maybeReadConfig(c.ConfigFile)
+	config, err := c.maybeReadConfig()
 	if err != nil {
 		return errorx.New("c.maybeReadConfig", err)
 	}
@@ -118,7 +118,7 @@ func (c *Context) shutdown() {
 
 	for _, srv := range c.servers {
 		if err := srv.Shutdown(ctx); err != nil {
-			logx.Errorf(logx.Get(), "Error shutting down server: %v\n", err)
+			logx.Errorf("Error shutting down server: %v\n", err)
 		}
 	}
 }
@@ -173,25 +173,25 @@ func (c *Context) maybeTLS(cfg *serverutil.Config) {
 }
 
 // maybeReadConfig reads the file path if it exists, otherwise returning a default config.
-func (c *Context) maybeReadConfig(path string) (*serverutil.Config, error) {
+func (c *Context) maybeReadConfig() (*serverutil.Config, error) {
 	var (
 		config *serverutil.Config
 		err    error
 	)
 
-	exists := fsx.Exists(path)
+	exists := fsx.Exists(c.ConfigFile)
 	switch {
 	case exists:
-		config, err = jsonx.ReadAndUnmarshal[serverutil.Config](path)
+		config, err = jsonx.ReadAndUnmarshal[serverutil.Config](c.ConfigFile)
 		if err != nil {
-			logx.Errorf(logx.Get(), "Error reading server config: %v\n", err)
+			logx.Errorf("Error reading server config: %v\n", err)
 		}
 
 		return config, err
-	case !exists && path != "":
-		return nil, fmt.Errorf("path specified but does not exist: %s", path)
+	case !exists && c.ConfigFile != "":
+		return nil, fmt.Errorf("path specified but does not exist: %s", c.ConfigFile)
 	default:
-		logx.Infof(logx.Get(), "Starting with default server config\n")
+		logx.Infof("Starting with default server config\n")
 		return c.newDefaultConfig(), nil
 	}
 }
@@ -263,7 +263,7 @@ func matchPattern(
 
 		route := filepath.ToSlash(filepath.Join(f.Route, rel))
 
-		logx.Infof(logx.Get(), "Port %d: %s -> %s\n", cfg.Port, route, abs)
+		logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, abs)
 		ctx.Handle(route, serverutil.ServeFileHandler(f.Info, abs))
 
 		return nil
@@ -281,7 +281,7 @@ func matchFile(
 		return errorx.WithFramef("invalid path %s: %w", f.Path, err)
 	}
 
-	logx.Infof(logx.Get(), "Port %d: %s -> %s\n", cfg.Port, f.Route, abs)
+	logx.Infof("Port %d: %s -> %s\n", cfg.Port, f.Route, abs)
 	ctx.Handle(f.Route, serverutil.ServeFileHandler(f.Info, abs))
 
 	return nil
@@ -291,7 +291,6 @@ func matchFile(
 func (c *Context) serveContentHandler(ctx *serverutil.Safe, cfg *serverutil.Server) error {
 	for _, f := range cfg.ContentEntries {
 		logx.Infof(
-			logx.Get(),
 			"Port %d: %s -> %s (%d)\n",
 			cfg.Port,
 			f.Route,
@@ -299,7 +298,7 @@ func (c *Context) serveContentHandler(ctx *serverutil.Safe, cfg *serverutil.Serv
 			len(f.Base64),
 		)
 
-		b, err := maybeBase64(c.FS, f.Base64)
+		b, err := c.FS.ReadBase64(f.Base64)
 		if err != nil {
 			return errorx.WithFrame(err)
 		}

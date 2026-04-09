@@ -55,13 +55,13 @@ func (h *Hosts) RemoveMap(hosts map[string]string) error {
 
 // add adds an entry to the hosts file.
 func (h *Hosts) add(ip string, hosts ...string) error {
-	logx.Infof(logx.Get(), "Adding hostsfile entry: %s %s\n", ip, strings.Join(hosts, " "))
+	logx.Infof("Adding hostsfile entry: %s %s\n", ip, strings.Join(hosts, " "))
 	return h.Add(ip, hosts...)
 }
 
 // remove removes an entry from the hosts file.
 func (h *Hosts) remove(ip string, hosts ...string) error {
-	logx.Infof(logx.Get(), "Removing hostsfile entry: %s %s\n", ip, strings.Join(hosts, " "))
+	logx.Infof("Removing hostsfile entry: %s %s\n", ip, strings.Join(hosts, " "))
 	return h.Remove(ip, hosts...)
 }
 

@@ -12,7 +12,7 @@ import (
 func (c *Context) NotFoundHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(maybeRead(c.FS, "404.html"))
+	_, _ = w.Write(c.FS.Bytes("404.html"))
 }
 
 // SPANotFound returns a SPA-style fallback HandlerFunc.
