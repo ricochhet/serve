@@ -27,8 +27,8 @@ func version() {
 func main() {
 	logx.LogTime.Store(true)
 	logx.MaxProcNameLength.Store(0)
-	logx.New("serve", 0)
-	logx.SetDebug(flags.Debug)
+	logx.New("serve", 0, logx.ModeAllRelease)
+	logx.Flag(logx.ModeDebug, flags.Debug)
 	_ = cmdx.QuickEdit(flags.QuickEdit)
 
 	if cmd, err := commands(); cmd {
