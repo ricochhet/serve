@@ -1,6 +1,7 @@
 package errorx
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 )
@@ -13,6 +14,11 @@ func WithFramef(format string, a ...any) error {
 // WithFrame returns an error with the frame of the caller.
 func WithFrame(err error) error {
 	return newErrWithFrame(err, 2)
+}
+
+// WithFrame returns an error with the frame of the caller.
+func WithFrameStr(text string) error {
+	return newErrWithFrame(errors.New(text), 2)
 }
 
 // newErrWithFrame returns an error with the frame of the caller.

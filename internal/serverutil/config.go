@@ -25,21 +25,12 @@ type Server struct {
 	MaxAge           int      `json:"maxAge"`
 	Timeouts         Timeouts `json:"timeouts"`
 
-	FileEntries    []FileEntry    `json:"fileEntries"`
-	ContentEntries []ContentEntry `json:"contentEntries"`
+	Files []File `json:"files"`
 }
 
-type FileEntry struct {
+type File struct {
 	Route string `json:"route"`
 	Path  string `json:"path"`
-
-	Info Info `json:"info"`
-}
-
-type ContentEntry struct {
-	Route  string `json:"route"`
-	Name   string `json:"name"`
-	Base64 string `json:"base64"` // Unmarshal handles []byte as base64, so just handle the key as a string.
 
 	Info Info `json:"info"`
 }

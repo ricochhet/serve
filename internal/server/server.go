@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -192,22 +193,18 @@ func (c *Context) maybeReadConfig() (*serverutil.Config, error) {
 		return nil, fmt.Errorf("path specified but does not exist: %s", c.ConfigFile)
 	default:
 		logx.Infof("Starting with default server config\n")
-		return c.newDefaultConfig(), nil
+		return &serverutil.Config{}, nil
 	}
 }
 
 // startServer starts an HTTP server with the specified server configuration.
-func (c *Context) startServer(ctx *serverutil.Safe, cfg *serverutil.Server) error {
-	if err := serveFileHandler(ctx, cfg); err != nil {
+func (c *Context) startServer(safe *serverutil.Safe, cfg *serverutil.Server) error {
+	if err := c.serveFileHandler(safe, cfg); err != nil {
 		return errorx.New("serveFileHandler", err)
 	}
 
-	if err := c.serveContentHandler(ctx, cfg); err != nil {
-		return errorx.New("c.serveContentHandler", err)
-	}
-
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	srv := ctx.ListenAndServe(addr)
+	srv := safe.ListenAndServe(addr)
 
 	c.servers = append(c.servers, srv)
 
@@ -215,31 +212,68 @@ func (c *Context) startServer(ctx *serverutil.Safe, cfg *serverutil.Server) erro
 }
 
 // serveContentHandler handles the ServeFileHandler for each file entry.
-func serveFileHandler(ctx *serverutil.Safe, cfg *serverutil.Server) error {
-	for _, f := range cfg.FileEntries {
-		info, err := os.Stat(f.Path)
-		if err != nil {
-			return errorx.WithFramef("invalid path %s: %w", f.Path, err)
+func (c *Context) serveFileHandler(safe *serverutil.Safe, cfg *serverutil.Server) error {
+	for _, f := range cfg.Files {
+		if after, ok := strings.CutPrefix(f.Path, c.FS.Prefix); ok {
+			f.Path = after
+			if err := c.serveEmbeddedFile(f, safe, cfg); err != nil {
+				return err
+			}
+
+			continue
 		}
 
-		if info.IsDir() {
-			if err := matchPattern(f, ctx, cfg); err != nil {
-				return errorx.New("matchPattern", err)
-			}
-		} else {
-			if err := matchFile(f, ctx, cfg); err != nil {
-				return errorx.New("matchFile", err)
-			}
+		if err := serveFile(f, safe, cfg); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
+// serveFile serves a file from the filesystem via ServeFileHandler.
+func serveFile(f serverutil.File, safe *serverutil.Safe, cfg *serverutil.Server) error {
+	info, err := os.Stat(f.Path)
+	if err != nil {
+		return errorx.WithFramef("invalid path %s: %w", f.Path, err)
+	}
+
+	if info.IsDir() {
+		if err := matchPattern(f, safe, cfg); err != nil {
+			return errorx.New("matchPattern", err)
+		}
+	} else {
+		if err := matchFile(f, safe, cfg); err != nil {
+			return errorx.New("matchFile", err)
+		}
+	}
+
+	return nil
+}
+
+// serveEmbeddedFile serves an embedded file via ServerContentHandler.
+func (c *Context) serveEmbeddedFile(
+	f serverutil.File,
+	safe *serverutil.Safe,
+	cfg *serverutil.Server,
+) error {
+	b, err := c.FS.Read(f.Path)
+	if err != nil {
+		return errorx.New("c.FS.MaybeReadPrefixed", err)
+	}
+
+	route := filepath.ToSlash(f.Route)
+
+	logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, f.Route)
+	safe.Handle(f.Route, serverutil.ServeContentHandler(f.Info, f.Path, b))
+
+	return nil
+}
+
 // matchPattern handles file paths that contain glob information.
 func matchPattern(
-	f serverutil.FileEntry,
-	ctx *serverutil.Safe,
+	f serverutil.File,
+	safe *serverutil.Safe,
 	cfg *serverutil.Server,
 ) error {
 	return filepath.Walk(f.Path, func(path string, info os.FileInfo, err error) error {
@@ -264,7 +298,7 @@ func matchPattern(
 		route := filepath.ToSlash(filepath.Join(f.Route, rel))
 
 		logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, abs)
-		ctx.Handle(route, serverutil.ServeFileHandler(f.Info, abs))
+		safe.Handle(route, serverutil.ServeFileHandler(f.Info, abs))
 
 		return nil
 	})
@@ -272,8 +306,8 @@ func matchPattern(
 
 // matchFile handles absolute file paths.
 func matchFile(
-	f serverutil.FileEntry,
-	ctx *serverutil.Safe,
+	f serverutil.File,
+	safe *serverutil.Safe,
 	cfg *serverutil.Server,
 ) error {
 	abs, err := filepath.Abs(f.Path)
@@ -282,29 +316,7 @@ func matchFile(
 	}
 
 	logx.Infof("Port %d: %s -> %s\n", cfg.Port, f.Route, abs)
-	ctx.Handle(f.Route, serverutil.ServeFileHandler(f.Info, abs))
-
-	return nil
-}
-
-// serveContentHandler handles the ServeContentHandler for each content entry.
-func (c *Context) serveContentHandler(ctx *serverutil.Safe, cfg *serverutil.Server) error {
-	for _, f := range cfg.ContentEntries {
-		logx.Infof(
-			"Port %d: %s -> %s (%d)\n",
-			cfg.Port,
-			f.Route,
-			f.Name,
-			len(f.Base64),
-		)
-
-		b, err := c.FS.ReadBase64(f.Base64)
-		if err != nil {
-			return errorx.WithFrame(err)
-		}
-
-		ctx.Handle(f.Route, serverutil.ServeContentHandler(f.Info, f.Name, b))
-	}
+	safe.Handle(f.Route, serverutil.ServeFileHandler(f.Info, abs))
 
 	return nil
 }

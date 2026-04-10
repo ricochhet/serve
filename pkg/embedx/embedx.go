@@ -2,7 +2,6 @@ package embedx
 
 import (
 	"embed"
-	"encoding/base64"
 	"path/filepath"
 	"strings"
 
@@ -63,20 +62,6 @@ func (e *EmbeddedFileSystem) MaybeReadEmbedded(name string) ([]byte, error) {
 	}
 
 	return e.Read(name)
-}
-
-// ReadBase64 attempts to cut the prefix from the name, otherwise returning decoded Base64 bytes.
-func (e *EmbeddedFileSystem) ReadBase64(name string) ([]byte, error) {
-	if after, ok := strings.CutPrefix(name, e.Prefix); ok {
-		return e.Read(after)
-	}
-
-	b, err := base64.RawStdEncoding.DecodeString(name)
-	if err != nil {
-		return nil, errorx.WithFrame(err)
-	}
-
-	return b, nil
 }
 
 // Bytes reads a file from the embedded filesystem, returning a new byte slice if it cannot be read.

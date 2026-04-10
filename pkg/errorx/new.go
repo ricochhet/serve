@@ -1,6 +1,7 @@
 package errorx
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 )
@@ -13,6 +14,11 @@ func Newf(format, errFormat string, errA ...any) error {
 // New returns a formatted error with the frame of the caller.
 func New(format string, err error, a ...any) error {
 	return newErr(format, err, 2, a...)
+}
+
+// NewStr returns a formatted error with the frame of the caller.
+func NewStr(text string) error {
+	return newErr("", errors.New(text), 2)
 }
 
 // newErr returns a formatted error with the frame of the caller.
