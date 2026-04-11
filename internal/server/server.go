@@ -15,18 +15,18 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
+	"github.com/ricochhet/serve/internal/config"
 	"github.com/ricochhet/serve/internal/serverutil"
 	"github.com/ricochhet/serve/pkg/embedx"
 	"github.com/ricochhet/serve/pkg/errorx"
 	"github.com/ricochhet/serve/pkg/fsx"
-	"github.com/ricochhet/serve/pkg/jsonx"
 	"github.com/ricochhet/serve/pkg/logx"
 )
 
 type Context struct {
 	ConfigFile string
 	Hosts      bool
-	TLS        *serverutil.TLS
+	TLS        *config.TLS
 	FS         *embedx.EmbeddedFileSystem
 
 	servers []*http.Server
@@ -36,7 +36,7 @@ type Context struct {
 func NewServer(
 	configFile string,
 	hosts bool,
-	tls *serverutil.TLS,
+	tls *config.TLS,
 	fs *embedx.EmbeddedFileSystem,
 ) *Context {
 	s := &Context{}
@@ -53,19 +53,29 @@ func NewServer(
 
 // StartServer starts an HTTP server with the specified server configuration.
 func (c *Context) StartServer() error {
-	config, err := c.maybeReadConfig()
+	config, err := config.Read(c.ConfigFile)
 	if err != nil {
 		return errorx.New("c.maybeReadConfig", err)
 	}
 
-	if err := c.addHosts(config); err != nil {
-		return errorx.New("c.addHosts", err)
+	h, err := serverutil.NewHosts()
+	if err != nil {
+		return errorx.New("serverutil.NewHosts", err)
+	}
+
+	if err := c.AddHosts(h, config); err != nil {
+		return errorx.New("c.AddHosts", err)
 	}
 
 	c.maybeTLS(config)
 
 	for _, cfg := range config.Servers {
 		ctx := serverutil.New()
+
+		ipLimit := 50
+		if cfg.IPLimit != 0 {
+			ipLimit = cfg.IPLimit
+		}
 
 		maxAge := 300
 		if cfg.MaxAge != 0 {
@@ -75,7 +85,7 @@ func (c *Context) StartServer() error {
 		r := chi.NewRouter()
 		r.Use(middleware.Recoverer)
 		r.Use(serverutil.WithLogging)
-		r.Use(httprate.LimitByIP(50, time.Minute))
+		r.Use(httprate.LimitByIP(ipLimit, time.Minute))
 		r.Use(cors.Handler(cors.Options{
 			AllowedOrigins:   []string{"https://*", "http://*"},
 			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -94,8 +104,8 @@ func (c *Context) StartServer() error {
 		}
 	}
 
-	if err := c.removeHosts(config); err != nil {
-		return errorx.New("c.removeHosts", err)
+	if err := c.RemoveHosts(h, config); err != nil {
+		return errorx.New("c.RemoveHosts", err)
 	}
 
 	c.shutdown()
@@ -120,41 +130,8 @@ func (c *Context) shutdown() {
 	}
 }
 
-// addHosts adds the specified hosts from the configuration.
-func (c *Context) addHosts(cfg *serverutil.Config) error {
-	if !c.isHostsValid(cfg) {
-		return nil
-	}
-
-	h, err := serverutil.NewHosts()
-	if err != nil {
-		return errorx.New("serverutil.NewHosts", err)
-	}
-
-	return h.AddMap(cfg.Hosts)
-}
-
-// removeHosts removes the specified hosts from the configuration.
-func (c *Context) removeHosts(cfg *serverutil.Config) error {
-	if !c.isHostsValid(cfg) {
-		return nil
-	}
-
-	h, err := serverutil.NewHosts()
-	if err != nil {
-		return errorx.New("serverutil.NewHosts", err)
-	}
-
-	return h.RemoveMap(cfg.Hosts)
-}
-
-// isHostsValid returns if the hosts state is valid.
-func (c *Context) isHostsValid(cfg *serverutil.Config) bool {
-	return c.Hosts && cfg.Hosts != nil && len(cfg.Hosts) != 0
-}
-
 // maybeTLS sets TLS based on whether flags are based, or if relevant config options are used.
-func (c *Context) maybeTLS(cfg *serverutil.Config) {
+func (c *Context) maybeTLS(cfg *config.Config) {
 	if c.TLS.CertFile == "" || c.TLS.KeyFile == "" { // default flags
 		c.TLS.Enabled = false
 	}
@@ -169,32 +146,8 @@ func (c *Context) maybeTLS(cfg *serverutil.Config) {
 	}
 }
 
-// maybeReadConfig reads the file path if it exists, otherwise returning a default config.
-func (c *Context) maybeReadConfig() (*serverutil.Config, error) {
-	var (
-		config *serverutil.Config
-		err    error
-	)
-
-	exists := fsx.Exists(c.ConfigFile)
-	switch {
-	case exists:
-		config, err = jsonx.ReadAndUnmarshal[serverutil.Config](c.ConfigFile)
-		if err != nil {
-			logx.Errorf("Error reading server config: %v\n", err)
-		}
-
-		return config, err
-	case !exists && c.ConfigFile != "":
-		return nil, fmt.Errorf("path specified but does not exist: %s", c.ConfigFile)
-	default:
-		logx.Infof("Starting with default server config\n")
-		return &serverutil.Config{}, nil
-	}
-}
-
 // startServer starts an HTTP server with the specified server configuration.
-func (c *Context) startServer(srv *serverutil.HTTPServer, cfg *serverutil.Server) error {
+func (c *Context) startServer(srv *serverutil.HTTPServer, cfg *config.Server) error {
 	if err := c.serveFileHandler(srv, cfg); err != nil {
 		return errorx.New("serveFileHandler", err)
 	}
@@ -206,7 +159,7 @@ func (c *Context) startServer(srv *serverutil.HTTPServer, cfg *serverutil.Server
 }
 
 // serveContentHandler handles the ServeFileHandler for each file entry.
-func (c *Context) serveFileHandler(srv *serverutil.HTTPServer, cfg *serverutil.Server) error {
+func (c *Context) serveFileHandler(srv *serverutil.HTTPServer, cfg *config.Server) error {
 	for _, f := range cfg.Files {
 		if after, ok := strings.CutPrefix(f.Path, c.FS.Prefix); ok {
 			f.Path = after
@@ -226,7 +179,7 @@ func (c *Context) serveFileHandler(srv *serverutil.HTTPServer, cfg *serverutil.S
 }
 
 // serveFile serves a file from the filesystem via ServeFileHandler.
-func serveFile(f serverutil.File, srv *serverutil.HTTPServer, cfg *serverutil.Server) error {
+func serveFile(f config.File, srv *serverutil.HTTPServer, cfg *config.Server) error {
 	info, err := os.Stat(f.Path)
 	if err != nil {
 		return errorx.WithFramef("invalid path %s: %w", f.Path, err)
@@ -247,9 +200,9 @@ func serveFile(f serverutil.File, srv *serverutil.HTTPServer, cfg *serverutil.Se
 
 // serveEmbeddedFile serves an embedded file via ServerContentHandler.
 func (c *Context) serveEmbeddedFile(
-	f serverutil.File,
+	f config.File,
 	srv *serverutil.HTTPServer,
-	cfg *serverutil.Server,
+	cfg *config.Server,
 ) error {
 	b, err := c.FS.Read(f.Path)
 	if err != nil {
@@ -266,9 +219,9 @@ func (c *Context) serveEmbeddedFile(
 
 // matchPattern handles file paths that contain glob information.
 func matchPattern(
-	f serverutil.File,
+	f config.File,
 	srv *serverutil.HTTPServer,
-	cfg *serverutil.Server,
+	cfg *config.Server,
 ) error {
 	return filepath.Walk(f.Path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -300,9 +253,9 @@ func matchPattern(
 
 // matchFile handles absolute file paths.
 func matchFile(
-	f serverutil.File,
+	f config.File,
 	srv *serverutil.HTTPServer,
-	cfg *serverutil.Server,
+	cfg *config.Server,
 ) error {
 	abs, err := filepath.Abs(f.Path)
 	if err != nil {

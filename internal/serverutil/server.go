@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/ricochhet/serve/internal/config"
 	"github.com/ricochhet/serve/pkg/logx"
 	"github.com/ricochhet/serve/pkg/syncx"
 )
@@ -15,8 +16,8 @@ import (
 type httpServer struct {
 	Router chi.Router
 
-	TLS      *TLS
-	Timeouts *Timeouts
+	TLS      *config.TLS
+	Timeouts *config.Timeouts
 }
 
 type HTTPServer struct {
@@ -29,7 +30,7 @@ func New() *HTTPServer {
 	}
 }
 
-func (s *HTTPServer) New(router chi.Router, tls *TLS, timeouts *Timeouts) {
+func (s *HTTPServer) New(router chi.Router, tls *config.TLS, timeouts *config.Timeouts) {
 	s.SetLocked(&httpServer{
 		Router:   router,
 		TLS:      tls,

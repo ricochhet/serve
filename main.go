@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ricochhet/serve/internal/config"
 	"github.com/ricochhet/serve/internal/server"
-	"github.com/ricochhet/serve/internal/serverutil"
 	"github.com/ricochhet/serve/pkg/cmdx"
 	"github.com/ricochhet/serve/pkg/logx"
 )
@@ -39,7 +39,7 @@ func main() {
 		return
 	}
 
-	s := server.NewServer(flags.ConfigFile, flags.Hosts, &serverutil.TLS{
+	s := server.NewServer(flags.ConfigFile, flags.Hosts, &config.TLS{
 		Enabled:  true,
 		CertFile: flags.CertFile,
 		KeyFile:  flags.KeyFile,
@@ -70,6 +70,10 @@ func commands() (bool, error) {
 		cmds.Usage()
 	case "version", "v":
 		version()
+	case "addhosts", "ah":
+		return true, addHostsCmd()
+	case "removehosts", "rh":
+		return true, removeHostsCmd()
 	default:
 		cmds.Usage()
 	}

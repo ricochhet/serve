@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/goodhosts/hostsfile"
+	"github.com/ricochhet/serve/internal/config"
 	"github.com/ricochhet/serve/pkg/errorx"
 	"github.com/ricochhet/serve/pkg/fsx"
 	"github.com/ricochhet/serve/pkg/logx"
@@ -31,8 +32,26 @@ func NewHosts() (*Hosts, error) {
 	return hosts, nil
 }
 
-// AddMap adds an entry to the hosts file.
-func (h *Hosts) AddMap(hosts map[string]string) error {
+// AddHosts adds the specified hosts from the configuration.
+func (h *Hosts) AddHosts(cfg *config.Config) error {
+	if len(cfg.Hosts) == 0 {
+		return nil
+	}
+
+	return h.addMap(cfg.Hosts)
+}
+
+// RemoveHosts removes the specified hosts from the configuration.
+func (h *Hosts) RemoveHosts(cfg *config.Config) error {
+	if len(cfg.Hosts) == 0 {
+		return nil
+	}
+
+	return h.removeMap(cfg.Hosts)
+}
+
+// addMap adds an entry to the hosts file.
+func (h *Hosts) addMap(hosts map[string]string) error {
 	for key, value := range hosts {
 		if err := h.add(key, value); err != nil {
 			return err
@@ -42,8 +61,8 @@ func (h *Hosts) AddMap(hosts map[string]string) error {
 	return h.Flush()
 }
 
-// RemoveMap removes an entry from the hosts file.
-func (h *Hosts) RemoveMap(hosts map[string]string) error {
+// removeMap removes an entry from the hosts file.
+func (h *Hosts) removeMap(hosts map[string]string) error {
 	for key, value := range hosts {
 		if err := h.remove(key, value); err != nil {
 			return err

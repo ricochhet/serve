@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ricochhet/serve/internal/config"
 	"github.com/ricochhet/serve/pkg/logx"
 )
 
@@ -38,7 +39,7 @@ func newHeaderWriter(
 	w http.ResponseWriter,
 	name string,
 	data []byte,
-	info Info,
+	info config.Info,
 ) *headerWriter {
 	allowed := make(map[string]struct{})
 	setContentType := false
@@ -82,14 +83,14 @@ func WithLogging(next http.Handler) http.Handler {
 }
 
 // ServeFileHandler creates a Handler for http.ServeFile.
-func ServeFileHandler(info Info, name string) http.Handler {
+func ServeFileHandler(info config.Info, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(newHeaderWriter(w, name, nil, info), r, name)
 	})
 }
 
 // ServeContentHandler creates a Handler for http.ServeContent.
-func ServeContentHandler(info Info, name string, data []byte) http.Handler {
+func ServeContentHandler(info config.Info, name string, data []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.ServeContent(
 			newHeaderWriter(w, name, data, info),
