@@ -65,7 +65,7 @@ func (c *Context) StartServer() error {
 	c.maybeTLS(config)
 
 	for _, cfg := range config.Servers {
-		ctx := serverutil.NewSafe()
+		ctx := serverutil.New()
 
 		maxAge := 300
 		if cfg.MaxAge != 0 {
@@ -87,11 +87,7 @@ func (c *Context) StartServer() error {
 
 		r.NotFound(c.NotFoundHandler)
 
-		ctx.SetLocked(&serverutil.HTTPServer{
-			Router:   r,
-			TLS:      c.TLS,
-			Timeouts: &cfg.Timeouts,
-		})
+		ctx.New(r, c.TLS, &cfg.Timeouts)
 
 		if err := c.startServer(ctx, &cfg); err != nil {
 			return errorx.New("c.startServer", err)
@@ -198,32 +194,30 @@ func (c *Context) maybeReadConfig() (*serverutil.Config, error) {
 }
 
 // startServer starts an HTTP server with the specified server configuration.
-func (c *Context) startServer(safe *serverutil.Safe, cfg *serverutil.Server) error {
-	if err := c.serveFileHandler(safe, cfg); err != nil {
+func (c *Context) startServer(srv *serverutil.HTTPServer, cfg *serverutil.Server) error {
+	if err := c.serveFileHandler(srv, cfg); err != nil {
 		return errorx.New("serveFileHandler", err)
 	}
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	srv := safe.ListenAndServe(addr)
-
-	c.servers = append(c.servers, srv)
+	c.servers = append(c.servers, srv.ListenAndServe(addr))
 
 	return nil
 }
 
 // serveContentHandler handles the ServeFileHandler for each file entry.
-func (c *Context) serveFileHandler(safe *serverutil.Safe, cfg *serverutil.Server) error {
+func (c *Context) serveFileHandler(srv *serverutil.HTTPServer, cfg *serverutil.Server) error {
 	for _, f := range cfg.Files {
 		if after, ok := strings.CutPrefix(f.Path, c.FS.Prefix); ok {
 			f.Path = after
-			if err := c.serveEmbeddedFile(f, safe, cfg); err != nil {
+			if err := c.serveEmbeddedFile(f, srv, cfg); err != nil {
 				return err
 			}
 
 			continue
 		}
 
-		if err := serveFile(f, safe, cfg); err != nil {
+		if err := serveFile(f, srv, cfg); err != nil {
 			return err
 		}
 	}
@@ -232,18 +226,18 @@ func (c *Context) serveFileHandler(safe *serverutil.Safe, cfg *serverutil.Server
 }
 
 // serveFile serves a file from the filesystem via ServeFileHandler.
-func serveFile(f serverutil.File, safe *serverutil.Safe, cfg *serverutil.Server) error {
+func serveFile(f serverutil.File, srv *serverutil.HTTPServer, cfg *serverutil.Server) error {
 	info, err := os.Stat(f.Path)
 	if err != nil {
 		return errorx.WithFramef("invalid path %s: %w", f.Path, err)
 	}
 
 	if info.IsDir() {
-		if err := matchPattern(f, safe, cfg); err != nil {
+		if err := matchPattern(f, srv, cfg); err != nil {
 			return errorx.New("matchPattern", err)
 		}
 	} else {
-		if err := matchFile(f, safe, cfg); err != nil {
+		if err := matchFile(f, srv, cfg); err != nil {
 			return errorx.New("matchFile", err)
 		}
 	}
@@ -254,7 +248,7 @@ func serveFile(f serverutil.File, safe *serverutil.Safe, cfg *serverutil.Server)
 // serveEmbeddedFile serves an embedded file via ServerContentHandler.
 func (c *Context) serveEmbeddedFile(
 	f serverutil.File,
-	safe *serverutil.Safe,
+	srv *serverutil.HTTPServer,
 	cfg *serverutil.Server,
 ) error {
 	b, err := c.FS.Read(f.Path)
@@ -265,7 +259,7 @@ func (c *Context) serveEmbeddedFile(
 	route := filepath.ToSlash(f.Route)
 
 	logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, f.Route)
-	safe.Handle(f.Route, serverutil.ServeContentHandler(f.Info, f.Path, b))
+	srv.Handle(f.Route, serverutil.ServeContentHandler(f.Info, f.Path, b))
 
 	return nil
 }
@@ -273,7 +267,7 @@ func (c *Context) serveEmbeddedFile(
 // matchPattern handles file paths that contain glob information.
 func matchPattern(
 	f serverutil.File,
-	safe *serverutil.Safe,
+	srv *serverutil.HTTPServer,
 	cfg *serverutil.Server,
 ) error {
 	return filepath.Walk(f.Path, func(path string, info os.FileInfo, err error) error {
@@ -298,7 +292,7 @@ func matchPattern(
 		route := filepath.ToSlash(filepath.Join(f.Route, rel))
 
 		logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, abs)
-		safe.Handle(route, serverutil.ServeFileHandler(f.Info, abs))
+		srv.Handle(route, serverutil.ServeFileHandler(f.Info, abs))
 
 		return nil
 	})
@@ -307,7 +301,7 @@ func matchPattern(
 // matchFile handles absolute file paths.
 func matchFile(
 	f serverutil.File,
-	safe *serverutil.Safe,
+	srv *serverutil.HTTPServer,
 	cfg *serverutil.Server,
 ) error {
 	abs, err := filepath.Abs(f.Path)
@@ -316,7 +310,7 @@ func matchFile(
 	}
 
 	logx.Infof("Port %d: %s -> %s\n", cfg.Port, f.Route, abs)
-	safe.Handle(f.Route, serverutil.ServeFileHandler(f.Info, abs))
+	srv.Handle(f.Route, serverutil.ServeFileHandler(f.Info, abs))
 
 	return nil
 }

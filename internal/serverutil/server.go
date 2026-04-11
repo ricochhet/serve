@@ -7,11 +7,45 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/ricochhet/serve/pkg/logx"
+	"github.com/ricochhet/serve/pkg/syncx"
 )
 
+type httpServer struct {
+	Router chi.Router
+
+	TLS      *TLS
+	Timeouts *Timeouts
+}
+
+type HTTPServer struct {
+	*syncx.Safe[httpServer]
+}
+
+func New() *HTTPServer {
+	return &HTTPServer{
+		&syncx.Safe[httpServer]{},
+	}
+}
+
+func (s *HTTPServer) New(router chi.Router, tls *TLS, timeouts *Timeouts) {
+	s.SetLocked(&httpServer{
+		Router:   router,
+		TLS:      tls,
+		Timeouts: timeouts,
+	})
+}
+
+func (s *HTTPServer) Handle(pattern string, handler http.Handler) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	s.Get().Router.Handle(pattern, handler)
+}
+
 // listenAndServe creates an HTTP server at the specified address.
-func (s *Safe) ListenAndServe(addr string) *http.Server {
+func (s *HTTPServer) ListenAndServe(addr string) *http.Server {
 	server := &http.Server{
 		Addr:              addr,
 		Handler:           s.Get().Router,
