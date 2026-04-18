@@ -43,7 +43,7 @@ func main() {
 		Enabled:  true,
 		CertFile: flags.CertFile,
 		KeyFile:  flags.KeyFile,
-	}, Embed())
+	}, Embed(), flags.ServeFile)
 	if err := serverCmd(s); err != nil {
 		logx.Errorf("%v\n", err)
 	}

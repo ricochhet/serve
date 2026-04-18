@@ -15,7 +15,8 @@ type Flags struct {
 	CertFile   string
 	KeyFile    string
 
-	Hosts bool
+	Hosts     bool
+	ServeFile bool
 }
 
 var (
@@ -48,4 +49,10 @@ func registerFlags(fs *flag.FlagSet, f *Flags) {
 	fs.StringVar(&f.CertFile, "cert", "", "TLS cert")
 	fs.StringVar(&f.KeyFile, "key", "", "TLS key")
 	fs.BoolVar(&f.Hosts, "hosts", false, "Modify hosts according to configuration")
+	fs.BoolVar(
+		&f.ServeFile,
+		"serve-file",
+		false,
+		"Use http.ServeFile for file contents (disabled mappings)",
+	)
 }

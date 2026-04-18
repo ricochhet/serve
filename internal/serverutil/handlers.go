@@ -84,7 +84,28 @@ func WithLogging(next http.Handler) http.Handler {
 }
 
 // ServeFileHandler creates a Handler for http.ServeFile.
-func (m *Map) ServeFileHandler(info config.Info, name string) http.Handler {
+func (m *Map) ServeFileHandler(info config.Info, name string, serveFile bool) http.Handler {
+	if serveFile {
+		return serveFileHandler(info, name)
+	}
+
+	return m.serveFileHandler(info, name)
+}
+
+// ServeContentHandler creates a Handler for http.ServeContent.
+func (m *Map) ServeContentHandler(info config.Info, name string, data []byte) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m.serveContent(w, r, info, name, data)
+	})
+}
+
+func serveFileHandler(info config.Info, name string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(newHeaderWriter(w, name, nil, info), r, name)
+	})
+}
+
+func (m *Map) serveFileHandler(info config.Info, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		data, err := os.ReadFile(name)
 		if err != nil {
@@ -92,18 +113,11 @@ func (m *Map) ServeFileHandler(info config.Info, name string) http.Handler {
 			return
 		}
 
-		m.ServeContent(w, r, info, name, data)
+		m.serveContent(w, r, info, name, data)
 	})
 }
 
-// ServeContentHandler creates a Handler for http.ServeContent.
-func (m *Map) ServeContentHandler(info config.Info, name string, data []byte) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		m.ServeContent(w, r, info, name, data)
-	})
-}
-
-func (m *Map) ServeContent(
+func (m *Map) serveContent(
 	w http.ResponseWriter,
 	r *http.Request,
 	info config.Info,
