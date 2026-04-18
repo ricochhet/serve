@@ -50,25 +50,35 @@ type Info struct {
 }
 
 // Read reads the path if it exists, otherwise returning a default config.
-func Read(path string) (*Config, error) {
+func Read[T any](path string, passthru bool) (*T, error) {
 	var (
-		config *Config
-		err    error
+		t   *T
+		err error
 	)
 
 	exists := fsx.Exists(path)
 	switch {
 	case exists:
-		config, err = jsonx.ReadAndUnmarshal[Config](path)
+		t, err = jsonx.ReadAndUnmarshal[T](path)
 		if err != nil {
-			logx.Errorf("Error reading server config: %v\n", err)
+			logx.Errorf("Error reading json: %v\n", err)
 		}
 
-		return config, err
+		return t, err
 	case !exists && path != "":
-		return nil, fmt.Errorf("path specified but does not exist: %s", path)
+		if !passthru {
+			return nil, fmt.Errorf("path specified but does not exist: %s", path)
+		}
+
+		return defaultT[T](), nil
 	default:
-		logx.Infof("Starting with default server config\n")
-		return &Config{}, nil
+		return defaultT[T](), nil
 	}
+}
+
+func defaultT[T any]() *T {
+	n := new(T)
+	logx.Infof("Starting with default %T\n", *n)
+
+	return n
 }

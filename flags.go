@@ -11,6 +11,7 @@ type Flags struct {
 	QuickEdit bool
 
 	ConfigFile string
+	MapFile    string
 	CertFile   string
 	KeyFile    string
 
@@ -43,6 +44,7 @@ func registerFlags(fs *flag.FlagSet, f *Flags) {
 	fs.BoolVar(&f.Debug, "debug", false, "Enable debug mode")
 	fs.BoolVar(&f.QuickEdit, "quick-edit", false, "Enable quick edit mode (Windows)")
 	fs.StringVar(&f.ConfigFile, "c", "serve.json", "Path to file server configuration")
+	fs.StringVar(&f.MapFile, "m", "mappings.json", "Path to file server mappings")
 	fs.StringVar(&f.CertFile, "cert", "", "TLS cert")
 	fs.StringVar(&f.KeyFile, "key", "", "TLS key")
 	fs.BoolVar(&f.Hosts, "hosts", false, "Modify hosts according to configuration")

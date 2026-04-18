@@ -75,7 +75,7 @@ func addHostsCmd() error {
 			return errorx.WithFrame(err)
 		}
 
-		config, err := config.Read(flags.ConfigFile)
+		config, err := config.Read[config.Config](flags.ConfigFile, false)
 		if err != nil {
 			return errorx.WithFrame(err)
 		}
@@ -94,7 +94,7 @@ func removeHostsCmd() error {
 			return errorx.WithFrame(err)
 		}
 
-		config, err := config.Read(flags.ConfigFile)
+		config, err := config.Read[config.Config](flags.ConfigFile, false)
 		if err != nil {
 			return errorx.WithFrame(err)
 		}

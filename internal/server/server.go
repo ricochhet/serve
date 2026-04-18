@@ -25,6 +25,7 @@ import (
 
 type Context struct {
 	ConfigFile string
+	MapFile    string
 	Hosts      bool
 	TLS        *config.TLS
 	FS         *embedx.EmbeddedFileSystem
@@ -32,9 +33,12 @@ type Context struct {
 	servers []*http.Server
 }
 
+var serverMap *serverutil.Map
+
 // NewServer returns a new Server type with assets preloaded.
 func NewServer(
 	configFile string,
+	mapFile string,
 	hosts bool,
 	tls *config.TLS,
 	fs *embedx.EmbeddedFileSystem,
@@ -42,6 +46,10 @@ func NewServer(
 	s := &Context{}
 	if configFile != "" {
 		s.ConfigFile = configFile
+	}
+
+	if mapFile != "" {
+		s.MapFile = mapFile
 	}
 
 	s.Hosts = hosts
@@ -53,9 +61,16 @@ func NewServer(
 
 // StartServer starts an HTTP server with the specified server configuration.
 func (c *Context) StartServer() error {
-	config, err := config.Read(c.ConfigFile)
+	sm, err := config.Read[serverutil.Map](c.MapFile, true)
 	if err != nil {
-		return errorx.New("c.maybeReadConfig", err)
+		return errorx.New("config.Read[Map]", err)
+	}
+
+	serverMap = sm
+
+	config, err := config.Read[config.Config](c.ConfigFile, false)
+	if err != nil {
+		return errorx.New("config.Read[config.Config]", err)
 	}
 
 	h, err := serverutil.NewHosts()
@@ -212,7 +227,7 @@ func (c *Context) serveEmbeddedFile(
 	route := filepath.ToSlash(f.Route)
 
 	logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, f.Route)
-	srv.Handle(f.Route, serverutil.ServeContentHandler(f.Info, f.Path, b))
+	srv.Handle(f.Route, serverMap.ServeContentHandler(f.Info, f.Path, b))
 
 	return nil
 }
@@ -245,7 +260,7 @@ func matchPattern(
 		route := filepath.ToSlash(filepath.Join(f.Route, rel))
 
 		logx.Infof("Port %d: %s -> %s\n", cfg.Port, route, abs)
-		srv.Handle(route, serverutil.ServeFileHandler(f.Info, abs))
+		srv.Handle(route, serverMap.ServeFileHandler(f.Info, abs))
 
 		return nil
 	})
@@ -263,7 +278,7 @@ func matchFile(
 	}
 
 	logx.Infof("Port %d: %s -> %s\n", cfg.Port, f.Route, abs)
-	srv.Handle(f.Route, serverutil.ServeFileHandler(f.Info, abs))
+	srv.Handle(f.Route, serverMap.ServeFileHandler(f.Info, abs))
 
 	return nil
 }

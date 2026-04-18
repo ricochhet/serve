@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"mime"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -83,21 +84,38 @@ func WithLogging(next http.Handler) http.Handler {
 }
 
 // ServeFileHandler creates a Handler for http.ServeFile.
-func ServeFileHandler(info config.Info, name string) http.Handler {
+func (m *Map) ServeFileHandler(info config.Info, name string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(newHeaderWriter(w, name, nil, info), r, name)
+		data, err := os.ReadFile(name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		m.ServeContent(w, r, info, name, data)
 	})
 }
 
 // ServeContentHandler creates a Handler for http.ServeContent.
-func ServeContentHandler(info config.Info, name string, data []byte) http.Handler {
+func (m *Map) ServeContentHandler(info config.Info, name string, data []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeContent(
-			newHeaderWriter(w, name, data, info),
-			r,
-			name,
-			time.Now(),
-			bytes.NewReader(data),
-		)
+		m.ServeContent(w, r, info, name, data)
 	})
+}
+
+func (m *Map) ServeContent(
+	w http.ResponseWriter,
+	r *http.Request,
+	info config.Info,
+	name string,
+	data []byte,
+) {
+	data = m.Parse(data)
+	http.ServeContent(
+		newHeaderWriter(w, name, data, info),
+		r,
+		name,
+		time.Now(),
+		bytes.NewReader(data),
+	)
 }
