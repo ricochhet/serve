@@ -2,6 +2,11 @@
 	"servers": [
 		{
 			"port": 8080,
+			"fileBrowser": {
+				"enabled": true,
+				"route": "/files",
+				"root": "./sololv"
+			},
 			"files": [
 				{
 					"route": "/",
@@ -54,6 +59,22 @@
 				{
 					"route": "/base.css",
 					"path": "asset:base.css",
+					"info": {
+						"statusCode": 0,
+						"headers": {}
+					}
+				},
+				{
+					"route": "/filebrowser.css",
+					"path": "asset:filebrowser.css",
+					"info": {
+						"statusCode": 0,
+						"headers": {}
+					}
+				},
+				{
+					"route": "/filebrowser.js",
+					"path": "asset:build/filebrowser.js",
 					"info": {
 						"statusCode": 0,
 						"headers": {}

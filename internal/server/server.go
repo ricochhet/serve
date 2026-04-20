@@ -170,6 +170,10 @@ func (c *Context) startServer(srv *serverutil.HTTPServer, cfg *config.Server) er
 		return errorx.New("serveFileHandler", err)
 	}
 
+	if err := c.registerFileBrowser(srv, cfg); err != nil {
+		return errorx.New("registerFileBrowser", err)
+	}
+
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	c.servers = append(c.servers, srv.ListenAndServe(addr))
 

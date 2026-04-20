@@ -1,0 +1,30 @@
+<html>
+	<head>
+		<title>serve | files.</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="/base.css" />
+		<link rel="stylesheet" href="/filebrowser.css" />
+	</head>
+
+	<body class="slv-ignore-darkreader">
+		<div class="slv-container">
+			<h1>files</h1>
+			<div id="breadcrumb" class="breadcrumb"></div>
+
+			<table>
+				<thead>
+					<tr>
+						<th>name</th>
+						<th class="col-size">size</th>
+						<th class="col-date">modified</th>
+					</tr>
+				</thead>
+				<tbody id="entries"></tbody>
+			</table>
+
+			<p id="error-msg" class="slv-hidden"></p>
+		</div>
+
+		<script src="/filebrowser.js"></script>
+	</body>
+</html>

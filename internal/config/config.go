@@ -27,6 +27,12 @@ type Timeouts struct {
 	Idle       int `json:"idle"`
 }
 
+type FileBrowser struct {
+	Enabled bool   `json:"enabled"`
+	Route   string `json:"route"`
+	Root    string `json:"root"`
+}
+
 type Server struct {
 	Port             int      `json:"port"`
 	AllowCredentials bool     `json:"allowCredentials"`
@@ -34,7 +40,8 @@ type Server struct {
 	MaxAge           int      `json:"maxAge"`
 	Timeouts         Timeouts `json:"timeouts"`
 
-	Files []File `json:"files"`
+	FileBrowser FileBrowser `json:"fileBrowser"`
+	Files       []File      `json:"files"`
 }
 
 type File struct {
