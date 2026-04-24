@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	"github.com/ricochhet/serve/internal/config"
+	"github.com/ricochhet/serve/internal/filebrowser"
 	"github.com/ricochhet/serve/internal/serverutil"
 	"github.com/ricochhet/serve/pkg/embedx"
 	"github.com/ricochhet/serve/pkg/errorx"
@@ -170,7 +171,7 @@ func (c *Context) startServer(srv *serverutil.HTTPServer, cfg *config.Server) er
 		return errorx.New("serveFileHandler", err)
 	}
 
-	if err := c.registerFileBrowser(srv, cfg); err != nil {
+	if err := filebrowser.Register(c.FS, srv, cfg); err != nil {
 		return errorx.New("registerFileBrowser", err)
 	}
 

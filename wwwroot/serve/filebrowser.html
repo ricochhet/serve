@@ -1,3 +1,4 @@
+<!doctype html>
 <html>
 	<head>
 		<title>serve | files.</title>
@@ -5,12 +6,23 @@
 		<link rel="stylesheet" href="/base.css" />
 		<link rel="stylesheet" href="/filebrowser.css" />
 	</head>
-
 	<body class="slv-ignore-darkreader">
 		<div class="slv-container">
 			<h1>files</h1>
-			<div id="breadcrumb" class="breadcrumb"></div>
 
+			<nav class="breadcrumb">
+				{{- range $i, $c := .Crumbs -}} {{- if $i}}<span class="sep"
+					>/</span
+				>{{end -}} {{- if $c.Path -}}
+				<a href="?path={{$c.Path}}">{{$c.Label}}</a>
+				{{- else -}}
+				<span class="current">{{$c.Label}}</span>
+				{{- end -}} {{- end -}}
+			</nav>
+
+			{{if .Error}}
+			<p id="error-msg">{{.Error}}</p>
+			{{else}}
 			<table>
 				<thead>
 					<tr>
@@ -19,12 +31,52 @@
 						<th class="col-date">modified</th>
 					</tr>
 				</thead>
-				<tbody id="entries"></tbody>
+				<tbody>
+					{{if ne .Path "/"}}
+					<tr>
+						<td>
+							<div class="entry-name">
+								<span class="entry-icon dir">▶</span>
+								<a href="?path={{parentPath .Path}}">../</a>
+							</div>
+						</td>
+						<td class="col-size">None</td>
+						<td class="col-date"></td>
+					</tr>
+					{{end}} {{range .Entries}}
+					<tr>
+						<td>
+							<div class="entry-name">
+								{{if .IsDir}}
+								<span class="entry-icon dir">▶</span>
+								<a href="?path={{.NavPath}}">{{.Name}}/</a>
+								{{else}}
+								<span class="entry-icon">·</span>
+								<span>{{.Name}}</span>
+								{{end}}
+							</div>
+						</td>
+						<td class="col-size">
+							{{if .IsDir}}None{{else}}{{formatSize .Size}}{{end}}
+						</td>
+						<td class="col-date">{{formatDate .ModTime}}</td>
+					</tr>
+					{{else}}
+					<tr>
+						<td
+							colspan="3"
+							style="
+								color: rgba(255, 255, 255, 0.3);
+								padding: 14px 8px;
+							"
+						>
+							empty directory
+						</td>
+					</tr>
+					{{end}}
+				</tbody>
 			</table>
-
-			<p id="error-msg" class="slv-hidden"></p>
+			{{end}}
 		</div>
-
-		<script src="/filebrowser.js"></script>
 	</body>
 </html>

@@ -57,7 +57,7 @@ func newHeaderWriter(
 
 	if !setContentType {
 		ct := mime.TypeByExtension(filepath.Ext(name))
-		if ct == "" || len(data) != 0 {
+		if ct == "" {
 			ct = http.DetectContentType(data)
 		}
 

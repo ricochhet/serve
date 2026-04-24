@@ -74,6 +74,16 @@ func (e *EmbeddedFileSystem) Bytes(name string) []byte {
 	return b
 }
 
+// String reads a file from the embedded filesystem, returning an empty string if it cannot be read.
+func (e *EmbeddedFileSystem) String(name string) string {
+	b, _ := e.Read(name)
+	if b == nil {
+		return ""
+	}
+
+	return string(b)
+}
+
 // Read reads a file from the embedded filesystem as an array of bytes.
 func (e *EmbeddedFileSystem) Read(name string) ([]byte, error) {
 	b, err := e.FS.ReadFile(filepath.ToSlash(filepath.Join(e.Root, name)))

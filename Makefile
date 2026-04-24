@@ -9,9 +9,6 @@ BUN_BUILD=bun build
 APP_PATH=.
 APP_NAME=serve
 
-WWW_PATH=wwwroot/$(APP_NAME)
-WWW_ENTRY=./filebrowser.ts
-
 define GO_BUILD_APP
 	CGO_ENABLED=1 GOOS=$(1) GOARCH=$(2) $(GO_BUILD) -o $(BUILD_OUTPUT)/$(3) $(4)
 endef
@@ -58,10 +55,6 @@ png-to-icos:
 build-assets:
 	cp -r $(ASSET_PATH)/* $(BUILD_OUTPUT)
 
-.PHONY: bun-build
-bun-build:
-	cd $(WWW_PATH) && $(BUN_BUILD) ./$(WWW_ENTRY) --outdir ./$(BUILD_OUTPUT)
-
 .PHONY: gen-certs
 gen-certs:
 	mkcert localhost 127.0.0.1 ::1
@@ -86,5 +79,5 @@ serve-darwin-arm64: fmt
 	$(call GO_BUILD_APP,darwin,arm64,$(APP_NAME)-darwin-arm64,$(APP_PATH))
 
 .PHONY: serve-windows
-serve-windows: fmt build-assets bun-build
+serve-windows: fmt build-assets
 	$(call GO_BUILD_APP,windows,amd64,$(APP_NAME).exe,$(APP_PATH))

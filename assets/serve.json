@@ -71,14 +71,6 @@
 						"statusCode": 0,
 						"headers": {}
 					}
-				},
-				{
-					"route": "/filebrowser.js",
-					"path": "asset:build/filebrowser.js",
-					"info": {
-						"statusCode": 0,
-						"headers": {}
-					}
 				}
 			]
 		}
