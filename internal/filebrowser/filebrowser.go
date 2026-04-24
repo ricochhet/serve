@@ -38,7 +38,10 @@ type Page struct {
 	Error   string
 }
 
-var tmpl = templatex.New()
+var (
+	tmplx   = templatex.New()
+	tmpl, _ = tmplx.GetTemplate("filebrowser")
+)
 
 func Register(fs *embedx.EmbeddedFileSystem, srv *serverutil.HTTPServer, cfg *config.Server) error {
 	f := cfg.FileBrowser
@@ -56,7 +59,7 @@ func Register(fs *embedx.EmbeddedFileSystem, srv *serverutil.HTTPServer, cfg *co
 		root = "."
 	}
 
-	tmpl.Register(&templatex.Template{
+	tmplx.Register(&templatex.Template{
 		FS:   fs,
 		Name: "filebrowser",
 		Path: "filebrowser.html",
@@ -98,7 +101,7 @@ func page(w http.ResponseWriter, r *http.Request, root string) {
 
 	full := filepath.Join(root, filepath.FromSlash(path))
 	if !strings.HasPrefix(full+string(filepath.Separator), root+string(filepath.Separator)) {
-		templatex.Render(tmpl, "filebrowser", w, http.StatusForbidden, Page{
+		templatex.Render(tmpl, w, http.StatusForbidden, Page{
 			Path:   path,
 			Crumbs: breadCrumbs(path),
 			Error:  "Forbidden",
@@ -109,7 +112,7 @@ func page(w http.ResponseWriter, r *http.Request, root string) {
 
 	dir, err := os.ReadDir(full)
 	if err != nil {
-		templatex.Render(tmpl, "filebrowser", w, http.StatusNotFound, Page{
+		templatex.Render(tmpl, w, http.StatusNotFound, Page{
 			Path:   path,
 			Crumbs: breadCrumbs(path),
 			Error:  "Directory not found",
@@ -151,7 +154,7 @@ func page(w http.ResponseWriter, r *http.Request, root string) {
 	sort.Slice(dirs, func(i, j int) bool { return dirs[i].Name < dirs[j].Name })
 	sort.Slice(files, func(i, j int) bool { return files[i].Name < files[j].Name })
 
-	templatex.Render(tmpl, "filebrowser", w, http.StatusOK, Page{
+	templatex.Render(tmpl, w, http.StatusOK, Page{
 		Path:    path,
 		Crumbs:  breadCrumbs(path),
 		Entries: slices.Concat(dirs, files),

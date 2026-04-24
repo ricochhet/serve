@@ -42,3 +42,33 @@ func (s *Safe[T]) Set(t *T) {
 func (s *Safe[T]) CopyFrom(target *Safe[T]) {
 	s.SetLocked(target.GetLocked())
 }
+
+// GetMap returns the value for key from a Safe map.
+func GetMap[K comparable, V any](s *Safe[map[K]V], key K) (V, bool) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	m := s.Get()
+	if m == nil {
+		var zero V
+		return zero, false
+	}
+
+	v, ok := (*m)[key]
+
+	return v, ok
+}
+
+// SetMap sets the value for key in a Safe map.
+func SetMap[K comparable, V any](s *Safe[map[K]V], key K, value V) {
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	m := s.Get()
+	if m == nil {
+		s.Set(&map[K]V{key: value})
+		return
+	}
+
+	(*m)[key] = value
+}

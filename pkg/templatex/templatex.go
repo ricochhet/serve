@@ -8,61 +8,43 @@ import (
 	"github.com/ricochhet/serve/pkg/syncx"
 )
 
-type templates map[string]*template.Template
-
 type Templates struct {
-	*syncx.Safe[templates]
-}
-
-func New() *Templates {
-	return &Templates{
-		&syncx.Safe[templates]{},
-	}
+	*syncx.Safe[map[string]*Template]
 }
 
 type Template struct {
+	*template.Template
+
 	FS      *embedx.EmbeddedFileSystem
 	Name    string
 	Path    string
 	FuncMap *template.FuncMap
 }
 
-func (t *Templates) Register(tmpl *Template) {
-	t.SetTemplate(
-		tmpl.Name,
-		template.Must(
-			template.New(tmpl.Name).Funcs(*tmpl.FuncMap).Parse(tmpl.FS.String(tmpl.Path)),
-		),
-	)
+func New() *Templates {
+	return &Templates{
+		&syncx.Safe[map[string]*Template]{},
+	}
 }
 
-func Render[T any](t *Templates, name string, w http.ResponseWriter, status int, data T) {
+func (t *Templates) Register(tmpl *Template) {
+	tmpl.Template = template.Must(
+		template.New(tmpl.Name).Funcs(*tmpl.FuncMap).Parse(tmpl.FS.String(tmpl.Path)),
+	)
+
+	t.SetTemplate(tmpl.Name, tmpl)
+}
+
+func Render[T any](t *Template, w http.ResponseWriter, status int, data T) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	_ = t.GetTemplate(name).Execute(w, data)
+	_ = t.Execute(w, data)
 }
 
-func (t *Templates) GetTemplate(name string) *template.Template {
-	t.Mutex.Lock()
-	defer t.Mutex.Unlock()
-
-	m := t.Get()
-	if m == nil {
-		return nil
-	}
-
-	return (*m)[name]
+func (t *Templates) GetTemplate(name string) (*Template, bool) {
+	return syncx.GetMap(t.Safe, name)
 }
 
-func (t *Templates) SetTemplate(name string, tmpl *template.Template) {
-	t.Mutex.Lock()
-	defer t.Mutex.Unlock()
-
-	m := t.Get()
-	if m == nil {
-		t.Set(&templates{name: tmpl})
-		return
-	}
-
-	(*m)[name] = tmpl
+func (t *Templates) SetTemplate(name string, tmpl *Template) {
+	syncx.SetMap(t.Safe, name, tmpl)
 }
